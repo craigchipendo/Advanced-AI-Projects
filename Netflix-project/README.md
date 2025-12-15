@@ -95,53 +95,7 @@ The user experience is delivered through a FastAPI + Gradio stack:[file:3]
 
 ---
 
-## 4. Original README (Preserved)
-
-> **Note:** The following section is the original application README, preserved verbatim and augmented by the sections above for full project context.[file:4]
-
-Netflix AI Recommender & Executive Analytics System  
-
-📋 Overview  
-
-This application is a robust, full-stack prototype that simulates a Netflix-like environment. It combines Generative AI for user engagement (movie recommendations and dynamic poster generation) with Business Intelligence for administration (SQL-based analytics dashboards).  
-
-The system features role-based authentication (User vs. Admin), a multi-page navigation architecture using FastAPI and Gradio, and dual-database logging.  
-
-🌟 Key Features  
-
-1. 🔐 Role-Based Authentication  
-
-User & Admin Portals: Distinct login flows for general users and system administrators.  
-
-Secure Storage: Passwords are hashed using SHA-256 before storage in MySQL.  
-
-Registration: New users can sign up, with data stored in a structured Relational Database.  
-
-2. 🤖 AI-Powered Recommender (User Feature)  
-
-Semantic Search: Uses ChromaDB and HuggingFace Embeddings (all-MiniLM-L6-v2) to allow natural language queries (e.g., "A scary movie about space aliens").  
-
-Generative UI: If a movie poster is missing or for visual flair, the app uses Stable Diffusion XL (via HuggingFace Inference API) to generate a cinematic poster on the fly based on the movie's description.  
-
-3. 📊 Executive Analytics Dashboard (Admin Feature)  
-
-Data Warehouse Integration: Connects to a dw_netflix_analytics SQL database.  
-
-Visualizations: Interactive charts using Plotly and Seaborn:  
-
-Hidden Gems: Scatter plot correlating low view counts with high ratings.  
-
-Vintage Analysis: Content consumption by release decade.  
-
-Audience Demographics: Review contributions by age group.  
-
-Geographic Trends: Top genres per country.  
-
-4. 📝 Universal Logging  
-
-MongoDB Integration: Every click, login attempt, and page navigation is logged to a NoSQL database (secure_app_logs) for audit trails.  
-
-🛠️ Tech Stack  
+### 3.5 🛠️ Tech Stack  
 
 Frontend: Gradio (Blocks, HTML/CSS styling)  
 
@@ -157,9 +111,9 @@ AI/ML: LangChain, HuggingFace Inference Client, Stable Diffusion
 
 Tunneling: PyNgrok (for public URL generation)  
 
-⚙️ Prerequisites & Installation  
+### 3.6 ⚙️ Prerequisites & Installation  
 
-1. System Requirements  
+**1. System Requirements**  
 
 Python 3.8+  
 
@@ -167,29 +121,30 @@ MySQL Server (Running locally on port 3306)
 
 MongoDB Server (Running locally on port 27017)  
 
-2. Install Python Dependencies  
+**2. Install Python Dependencies**  
 
 Create a requirements.txt file or run the following command:  
 
 `pip install gradio pandas matplotlib seaborn plotly pymysql sqlalchemy cryptography pymongo huggingface_hub langchain langchain_community chromadb fastapi uvicorn pyngrok`  
 
-3. Database Setup  
+**3. Database Setup**  
 
 The application expects two MySQL databases and one MongoDB instance.  
 
-A. Authentication DB (Auto-Created)  
+**A. Authentication DB (Auto-Created)**  
 
 The script explicitly checks for and creates secure_app_db and the users/admins tables on startup. No manual work is needed here other than ensuring your MySQL credentials are correct.  
 
-B. Analytics DB (Manual Setup Required)  
+**B. Analytics DB (Manual Setup Required)**  
 
 The Admin Dashboard expects a database named dw_netflix_analytics.  
 
 You must import your Netflix data warehouse schema (tables: FactUserContentMetrics, DimTitle, DimUser, DimDate) into your local MySQL server for the charts to populate.  
 
-4. Configuration  
+**4. Configuration**  
 
 Open netflix_app.py and update the following configuration blocks to match your local environment:  
 
 MySQL Credentials (Line 36 & 252):  
+
 
