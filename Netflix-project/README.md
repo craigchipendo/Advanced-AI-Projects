@@ -93,33 +93,31 @@ The user experience is delivered through a FastAPI + Gradio stack:[file:3]
 - **Security & Configuration:**  
   Passwords are hashed using SHA‑256, databases are auto‑created when possible, and configuration for MySQL credentials, HuggingFace tokens, and Ngrok tokens is centralized in `netflix_app.py`.[file:3]
 
----
-
 ### 3.5 🛠️ Tech Stack  
 
-Frontend: Gradio (Blocks, HTML/CSS styling)  
+- Frontend: Gradio (Blocks, HTML/CSS styling)  
 
-Backend: FastAPI, Uvicorn  
+- Backend: FastAPI, Uvicorn  
 
-Databases: * MySQL (Auth & Analytics)  
+- Databases: * MySQL (Auth & Analytics)  
 
-MongoDB (Logs)  
+- MongoDB (Logs)  
 
-ChromaDB (Vector Embeddings)  
+- ChromaDB (Vector Embeddings)  
 
-AI/ML: LangChain, HuggingFace Inference Client, Stable Diffusion  
+- AI/ML: LangChain, HuggingFace Inference Client, Stable Diffusion  
 
-Tunneling: PyNgrok (for public URL generation)  
+- Tunneling: PyNgrok (for public URL generation)  
 
 ### 3.6 ⚙️ Prerequisites & Installation  
 
 **1. System Requirements**  
 
-Python 3.8+  
+- Python 3.8+  
 
-MySQL Server (Running locally on port 3306)  
+- MySQL Server (Running locally on port 3306)  
 
-MongoDB Server (Running locally on port 27017)  
+- MongoDB Server (Running locally on port 27017)  
 
 **2. Install Python Dependencies**  
 
@@ -146,5 +144,6 @@ You must import your Netflix data warehouse schema (tables: FactUserContentMetri
 Open netflix_app.py and update the following configuration blocks to match your local environment:  
 
 MySQL Credentials (Line 36 & 252):  
+
 
 
