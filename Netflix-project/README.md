@@ -143,7 +143,8 @@ You must import your Netflix data warehouse schema (tables: FactUserContentMetri
 
 Open netflix_app.py and update the following configuration blocks to match your local environment:  
 
-MySQL Credentials (Line 36 & 252):  
+---
+
 
 
 
