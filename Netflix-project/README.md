@@ -80,7 +80,7 @@ To enable this, the application integrates three main data stores, populated pri
 
 1. **MySQL (Authentication & Analytics):**  
    - `secure_app_db` manages `users/admins` tables with SHA‑256‑hashed credentials and role assignments. 
-   - `dw_netflix_analytics` hosts a star‑schema warehouse (`FactUserContentMetrics`, `DimUser`, `DimTitle`, `DimDate`) used directly by the executive dashboard.[file:3]
+   - `dw_netflix_analytics` hosts a star‑schema warehouse (`FactUserContentMetrics`, `DimUser`, `DimTitle`, `DimDate`) used directly by the executive dashboard.
 
 2. **MongoDB (`secure_app_logs`):**  
    - Stores semi‑structured logs of every click, login attempt, and navigation event, forming a rich behavioral dataset for UX analysis, anomaly detection, and future model training.
@@ -152,6 +152,7 @@ You must import your Netflix data warehouse schema (tables: FactUserContentMetri
 Open netflix_app.py and update the following configuration blocks to match your local environment:  
 
 ---
+
 
 
 
