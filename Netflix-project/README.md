@@ -69,8 +69,20 @@ The **Netflix AI Recommender & Executive Analytics System** is a new business ap
 
 - **For Users:**  
   An AI‑powered “Ask Netflix” interface lets subscribers describe what they want to watch in natural language (e.g., “a funny time‑travel movie”), returning semantically relevant titles with AI‑generated posters when artwork is missing or needs enhancement.
+  <img
+  width="2127"
+  height="1201"
+  alt="OLTP diagram"
+  src="./user.png"
+/>
 - **For Executives:**  
   A dedicated analytics portal provides interactive views of catalog performance, engagement, and audience behavior, including hidden gems (high rating, low views), vintage content consumption, demographic review patterns, and geographic genre preferences.
+  <img
+  width="2127"
+  height="1201"
+  alt="OLTP diagram"
+  src="./Exco analytics.png"
+/>
 
 This dual‑facing design differs from existing offerings by tightly coupling generative AI, semantic search, and BI dashboards in one integrated product.
 
@@ -152,6 +164,7 @@ You must import your Netflix data warehouse schema (tables: FactUserContentMetri
 Open netflix_app.py and update the following configuration blocks to match your local environment:  
 
 ---
+
 
 
 
