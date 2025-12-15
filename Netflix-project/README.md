@@ -24,7 +24,7 @@ For daily operations, the project uses a normalized MySQL database (e.g., `netfl
   `ViewingActivity` captures per‑session start time, duration, device type, and the linked title/episode, while `ContentReviews` records structured ratings and free‑form comments.
 
 The schema is designed in Third Normal Form (3NF) to minimize redundancy and safely support frequent updates to catalog and subscription plans without corrupting historical viewing or billing records.
-(OLTP ER Diagram.png)
+![OLTP ER Diagram for existing system] (OLTP ER Diagram.png)
 
 
 ### 2.2 NoSQL & Big‑Data Warehouse (Hive + S3)
@@ -146,6 +146,7 @@ You must import your Netflix data warehouse schema (tables: FactUserContentMetri
 Open netflix_app.py and update the following configuration blocks to match your local environment:  
 
 ---
+
 
 
 
