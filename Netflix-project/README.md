@@ -165,6 +165,9 @@ Open netflix_app.py and update the following configuration blocks to match your 
 
 ---
 
+#### Youtube video link: https://youtu.be/divvz5rfEiE?si=9tNabdRgbbn7kPBo
+
+
 
 
 
