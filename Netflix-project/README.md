@@ -9,6 +9,61 @@ The existing ecosystem is modeled as a normalized MySQL OLTP schema for users, s
 On top of this foundation, the **Netflix AI Recommender & Executive Analytics System** introduces a novel AI‑powered application: end users get semantic‑search recommendations and dynamically generated posters, while executives access interactive dashboards and behavioral telemetry not present in the baseline platform. The application integrates MySQL (auth and warehouse), MongoDB (clickstream logs), and ChromaDB (vector search) via a FastAPI backend and Gradio front end, providing a realistic demonstration of how a streaming company could evolve its data architecture and product capabilities.
 
 ---
+```mermaid
+graph TD
+    subgraph "Phase 1: Data Engineering Foundation"
+        S3[("Amazon S3 (Raw Data CSVs)<br>Titles, Episodes, Watch Events")]
+        MySQL_OLTP[("MySQL OLTP<br>(User & Catalog Management)")]
+        Hive[("Apache Hive on EMR<br>(Big Data Warehouse)")]
+        
+        S3 -->|Schema-on-Read| Hive
+        MySQL_OLTP -.->|Sync/Export| S3
+        Hive -->|ETL & Aggregation| Hive_Parquet[("Parquet Star Schema<br>(Fact/Dim Tables)")]
+    end
+
+    subgraph "Phase 2: App Data Preparation"
+        Chroma[("ChromaDB<br>(Vector Store)")]
+        MySQL_App[("MySQL Analytics DB<br>(dw_netflix_analytics)")]
+        MySQL_Auth[("MySQL Auth DB<br>(secure_app_db)")]
+        
+        Hive_Parquet -->|Extract Metrics| MySQL_App
+        MySQL_OLTP -->|Title Metadata| Chroma
+        HF_Embed[("HuggingFace Model<br>(all-MiniLM-L6-v2)")] -.->|Generate Embeddings| Chroma
+    end
+
+    subgraph "Phase 3: Application Architecture"
+        FastAPI[("FastAPI Backend<br>(Orchestration)")]
+        Mongo[("MongoDB<br>(Clickstream Logs)")]
+        AI_Gen[("Generative AI<br>(Stable Diffusion / Semantic Search)")]
+        
+        FastAPI <--> MySQL_Auth
+        FastAPI <--> MySQL_App
+        FastAPI <--> Chroma
+        FastAPI -->|Write Logs| Mongo
+        FastAPI <--> AI_Gen
+    end
+
+    subgraph "Phase 4: User Experience"
+        Gradio[("Gradio Frontend<br>(Web UI)")]
+        User((End User))
+        Exec((Executive))
+        
+        User -->|"Ask Netflix (AI Search)"| Gradio
+        Exec -->|"Analytics Dashboard"| Gradio
+        Gradio <--> FastAPI
+    end
+
+    classDef db fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
+    classDef process fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+    classDef ai fill:#f3e5f5,stroke:#4a148c,stroke-width:2px;
+    classDef ui fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px;
+    
+    class S3,MySQL_OLTP,Hive,Hive_Parquet,Chroma,MySQL_App,MySQL_Auth,Mongo db;
+    class FastAPI,HF_Embed process;
+    class AI_Gen ai;
+    class Gradio,User,Exec ui;
+```
+---
 
 ## 2. Existing Data Systems
 
@@ -166,6 +221,7 @@ Open netflix_app.py and update the following configuration blocks to match your 
 ---
 
 #### Youtube video link: https://youtu.be/divvz5rfEiE?si=9tNabdRgbbn7kPBo
+
 
 
 
