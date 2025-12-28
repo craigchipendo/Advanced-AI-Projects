@@ -64,6 +64,48 @@ graph TD
     class Gradio,User,Exec ui;
 ```
 ---
+## Architecture Flow
+
+%% PHASE 1: SOURCE SYSTEM DESIGN
+A[Design MySQL OLTP schema<br/>Users, Subscriptions, Titles,<br/>Episodes, ViewingActivity, ContentReviews] --> B[Implement normalized 3NF database<br/>netflix_oltp]
+
+%% PHASE 2: BIG DATA WAREHOUSE
+B --> C[Generate synthetic CSV data<br/>Titles, Episodes, Watch Events, Reviews<br/>stored in S3 prefixes]
+C --> D[Create Hive external tables<br/>over S3 raw layer]
+D --> E[Transform to Parquet star schema<br/>dimtitles, dimepisodes,<br/>factwatchevents, factcontentreviews<br/>partitioned by date/year]
+
+%% PHASE 3: ANALYTICS WAREHOUSE FOR APP
+E --> F[Build analytics star schema in MySQL<br/>dw_netflix_analytics:<br/>FactUserContentMetrics, DimUser,<br/>DimTitle, DimDate]
+
+%% PHASE 4: NEW BUSINESS APPLICATION
+F --> G[Design multi-store architecture<br/>MySQL (auth & analytics),<br/>MongoDB (secure_app_logs),<br/>ChromaDB (vector store)]
+G --> H[Create FastAPI backend<br/>Auth, routing, DB connectors,<br/>embedding & recommendation logic]
+H --> I[Integrate AI components<br/>LangChain, HuggingFace embeddings<br/>Stable Diffusion poster generation]
+I --> J[Build Gradio front end<br/>User login, Admin portal,<br/>AI "Ask Netflix" search,<br/>Executive analytics dashboards]
+
+%% PHASE 5: DEPLOY & DEMO
+J --> K[Configure environment & secrets<br/>MySQL/Mongo credentials,<br/>HuggingFace + Ngrok tokens]
+K --> L[Run app with Uvicorn + PyNgrok<br/>Expose public URL<br/>Record clickstream in MongoDB]
+
+%% GROUPS
+subgraph S1[Operational & Warehouse Layer]
+    B
+    C
+    D
+    E
+    F
+end
+
+subgraph S2[AI Application Layer]
+    G
+    H
+    I
+    J
+    K
+    L
+end
+undefined
+---
 
 ## 2. Existing Data Systems
 
@@ -221,6 +263,7 @@ Open netflix_app.py and update the following configuration blocks to match your 
 ---
 
 #### Youtube video link: https://youtu.be/divvz5rfEiE?si=9tNabdRgbbn7kPBo
+
 
 
 
