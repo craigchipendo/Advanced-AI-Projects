@@ -9,6 +9,8 @@ The existing ecosystem is modeled as a normalized MySQL OLTP schema for users, s
 On top of this foundation, the **Netflix AI Recommender & Executive Analytics System** introduces a novel AI‑powered application: end users get semantic‑search recommendations and dynamically generated posters, while executives access interactive dashboards and behavioral telemetry not present in the baseline platform. The application integrates MySQL (auth and warehouse), MongoDB (clickstream logs), and ChromaDB (vector search) via a FastAPI backend and Gradio front end, providing a realistic demonstration of how a streaming company could evolve its data architecture and product capabilities.
 
 ---
+## 2. Architecture Flow
+
 ```mermaid
 graph TD
     subgraph "Phase 1: Data Engineering Foundation"
@@ -64,54 +66,10 @@ graph TD
     class Gradio,User,Exec ui;
 ```
 ---
-## Architecture Flow
 
-```mermaid
-%% PHASE 1: SOURCE SYSTEM DESIGN
-A[Design MySQL OLTP schema<br/>Users, Subscriptions, Titles,<br/>Episodes, ViewingActivity, ContentReviews] --> B[Implement normalized 3NF database<br/>netflix_oltp]
+## 3. Existing Data Systems
 
-%% PHASE 2: BIG DATA WAREHOUSE
-B --> C[Generate synthetic CSV data<br/>Titles, Episodes, Watch Events, Reviews<br/>stored in S3 prefixes]
-C --> D[Create Hive external tables<br/>over S3 raw layer]
-D --> E[Transform to Parquet star schema<br/>dimtitles, dimepisodes,<br/>factwatchevents, factcontentreviews<br/>partitioned by date/year]
-
-%% PHASE 3: ANALYTICS WAREHOUSE FOR APP
-E --> F[Build analytics star schema in MySQL<br/>dw_netflix_analytics:<br/>FactUserContentMetrics, DimUser,<br/>DimTitle, DimDate]
-
-%% PHASE 4: NEW BUSINESS APPLICATION
-F --> G[Design multi-store architecture<br/>MySQL (auth & analytics),<br/>MongoDB (secure_app_logs),<br/>ChromaDB (vector store)]
-G --> H[Create FastAPI backend<br/>Auth, routing, DB connectors,<br/>embedding & recommendation logic]
-H --> I[Integrate AI components<br/>LangChain, HuggingFace embeddings<br/>Stable Diffusion poster generation]
-I --> J[Build Gradio front end<br/>User login, Admin portal,<br/>AI "Ask Netflix" search,<br/>Executive analytics dashboards]
-
-%% PHASE 5: DEPLOY & DEMO
-J --> K[Configure environment & secrets<br/>MySQL/Mongo credentials,<br/>HuggingFace + Ngrok tokens]
-K --> L[Run app with Uvicorn + PyNgrok<br/>Expose public URL<br/>Record clickstream in MongoDB]
-
-%% GROUPS
-subgraph S1[Operational & Warehouse Layer]
-    B
-    C
-    D
-    E
-    F
-end
-
-subgraph S2[AI Application Layer]
-    G
-    H
-    I
-    J
-    K
-    L
-end
-undefined
-```
----
-
-## 2. Existing Data Systems
-
-### 2.1 OLTP RDBMS Design
+### 3.1 OLTP RDBMS Design
 
 For daily operations, the project uses a normalized MySQL database (e.g., `netflix_oltp`) to support mission‑critical transactions.
 
@@ -132,7 +90,7 @@ The schema is designed in Third Normal Form (3NF) to minimize redundancy and saf
 />
 
 
-### 2.2 NoSQL & Big‑Data Warehouse (Hive + S3)
+### 3.2 NoSQL & Big‑Data Warehouse (Hive + S3)
 
 To support scalable analytics, a Hive‑based NoSQL data warehouse is deployed on Amazon EMR.
 
@@ -145,7 +103,7 @@ To support scalable analytics, a Hive‑based NoSQL data warehouse is deployed o
 
 In addition, a MongoDB database (`secure_app_logs`) is used as a NoSQL store for semi‑structured clickstream and audit logs, capturing each login, button click, and navigation path in an immutable, append‑only fashion.
 
-### 2.3 Implementation Challenges
+### 3.3 Implementation Challenges
 
 Key implementation challenges and solutions include:
 
@@ -160,9 +118,9 @@ Key implementation challenges and solutions include:
 
 ---
 
-## 3. New Business Application
+## 4. New Business Application
 
-### 3.1 Concept & Differentiation
+### 4.1 Concept & Differentiation
 
 The **Netflix AI Recommender & Executive Analytics System** is a new business application that goes beyond the company’s baseline streaming and batch reporting capabilities.
 
@@ -185,7 +143,7 @@ The **Netflix AI Recommender & Executive Analytics System** is a new business ap
 
 This dual‑facing design differs from existing offerings by tightly coupling generative AI, semantic search, and BI dashboards in one integrated product.
 
-### 3.2 Dataset & Database Design
+### 4.2 Dataset & Database Design
 
 To enable this, the application integrates three main data stores, populated primarily from synthetic data extracted and transformed from the OLTP model and Hive warehouse:
 
@@ -201,7 +159,7 @@ To enable this, the application integrates three main data stores, populated pri
 
 This multi‑store design contrasts sharply with the legacy environment, which relied almost entirely on relational schemas and did not provide a unified vector index or robust clickstream logging for online AI experiences.
 
-### 3.3 Front‑End & Service Architecture
+### 4.3 Front‑End & Service Architecture
 
 The user experience is delivered through a FastAPI + Gradio stack:
 
@@ -212,7 +170,7 @@ The user experience is delivered through a FastAPI + Gradio stack:
 - **Security & Configuration:**  
   Passwords are hashed using SHA‑256, databases are auto‑created when possible, and configuration for MySQL credentials, HuggingFace tokens, and Ngrok tokens is centralized in `netflix_app.py`.
 
-### 3.5 🛠️ Tech Stack  
+### 4.5 🛠️ Tech Stack  
 
 - Frontend: Gradio (Blocks, HTML/CSS styling)  
 
@@ -228,7 +186,7 @@ The user experience is delivered through a FastAPI + Gradio stack:
 
 - Tunneling: PyNgrok (for public URL generation)  
 
-### 3.6 ⚙️ Prerequisites & Installation  
+### 4.6 ⚙️ Prerequisites & Installation  
 
 **1. System Requirements**  
 
@@ -265,6 +223,7 @@ Open netflix_app.py and update the following configuration blocks to match your 
 ---
 
 #### Youtube video link: https://youtu.be/divvz5rfEiE?si=9tNabdRgbbn7kPBo
+
 
 
 
