@@ -66,6 +66,7 @@ graph TD
 ---
 ## Architecture Flow
 
+```mermaid
 %% PHASE 1: SOURCE SYSTEM DESIGN
 A[Design MySQL OLTP schema<br/>Users, Subscriptions, Titles,<br/>Episodes, ViewingActivity, ContentReviews] --> B[Implement normalized 3NF database<br/>netflix_oltp]
 
@@ -105,6 +106,7 @@ subgraph S2[AI Application Layer]
     L
 end
 undefined
+```
 ---
 
 ## 2. Existing Data Systems
@@ -263,6 +265,7 @@ Open netflix_app.py and update the following configuration blocks to match your 
 ---
 
 #### Youtube video link: https://youtu.be/divvz5rfEiE?si=9tNabdRgbbn7kPBo
+
 
 
 
