@@ -120,7 +120,6 @@ This file provides documentation for developers and practitioners working with t
 
 `requirements`
 The `requirements` file lists the Python packages required to run the project. Typical dependencies include:
-* A web framework and ASGI server (for example, FastAPI, Uvicorn).
 * Google ADK and compatible LLM client libraries.
 * HTTP and data‑processing libraries for integrating external research tools.
 Installing these dependencies ensures that the research agents, planning logic, and orchestration components run consistently across environments.
