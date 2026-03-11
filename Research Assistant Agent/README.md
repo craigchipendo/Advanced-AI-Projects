@@ -11,67 +11,64 @@ This repository contains a containerized research assistant built with Python an
 graph TD
     %% Layer 1: Client
     subgraph Layer_1 [① Client Layer]
-        UI[Browser UI: Jinja2/JS]
-        Static[Static Assets: Logos/CSS]
+        ADK_Web[ADK Web UI: Localhost Chat]
+        Terminal[CLI Runner: main.py]
     end
-    %% Layer 2: API
-    subgraph Layer_2 [② API & Server Layer]
-        FastAPI[FastAPI App: main.py]
-        TaskStore[(In-memory Task Store)]
-        DB[(Database: SQLite/Postgres)]
-        BG_Thread[Background Thread: run_agent_workflow]
+
+    %% Layer 2: Orchestration
+    subgraph Layer_2 [② Orchestration Layer]
+        Planner[Planning Module: src/planning_agent.py]
+        Executor[Executor Router: src/planning_agent.py]
+        Metadata[.adk/: Tool Registration & State]
     end
-    %% Layer 3: Orchestration
-    subgraph Layer_3 [③ Orchestration Layer]
-        Planner[Planner Agent: Gemini 2.0 Flash]
-        Router[Executor Router: Keyword Routing]
-    end
-    %% Layer 4: Agents
-    subgraph Layer_4 [④ Specialist Agents - Google ADK]
-        Researcher[Research Agent]
-        Writer[Writer Agent]
-        Editor[Editor Agent]
+
+    %% Layer 3: Agents
+    subgraph Layer_3 [③ Specialist Agents - Google ADK]
+        Researcher[Research Agent: src/agents.py]
+        Writer[Writer Agent: src/agents.py]
+        Editor[Editor Agent: src/agents.py]
         ADK_Runtime[ADK InMemoryRunner]
     end
-    %% Layer 5: Tools
-    subgraph Layer_5 [⑤ Research Tools]
-        Tavily[Tavily Search API]
-        arXiv[arXiv Atom API/PDF Scraper]
-        Wiki[Wikipedia API]
-        HTTP_Client[Shared HTTP Session w/ Retries]
+
+    %% Layer 4: Tools
+    subgraph Layer_4 [④ Research Tools]
+        Tavily[Tavily: Web Search Adapter]
+        arXiv[arXiv: Scholarly PDF Scraper]
+        Wiki[Wikipedia: Context Lookup]
+        HTTP_Client[Shared Requests Session]
     end
-    %% Layer 6: Infra
-    subgraph Layer_6 [⑥ Infrastructure & Config]
-        Gemini[Gemini API / Vertex AI]
-        Docker[Docker: Python 3.11-slim]
-        Env[Environment: .env / Secrets]
+
+    %% Layer 5: Infrastructure
+    subgraph Layer_5 [⑤ Infrastructure & Config]
+        Gemini[Gemini 2.0 Flash / LLM]
+        Docker[Dockerfile: python:3.11-slim]
+        Env[.env: API Keys & Model Config]
     end
+
     %% Relationships
-    UI -->|POST /generate_report| FastAPI
-    UI -->|GET /task_progress| TaskStore
-    FastAPI --> BG_Thread
-    FastAPI --> DB
-    BG_Thread --> Planner
-    Planner -->|Returns JSON Plan| Router
-    Router -->|Routes Step| Researcher
-    Router -->|Routes Step| Writer
-    Router -->|Routes Step| Editor
-    Researcher --> Tavily
-    Researcher --> arXiv
-    Researcher --> Wiki
+    ADK_Web -->|Triggers Agent| ADK_Runtime
+    Terminal -->|Calls Planner| Planner
+    Planner -->|Returns Task List| Executor
+    Executor -->|Routes to| Researcher
+    Executor -->|Routes to| Writer
+    Executor -->|Routes to| Editor
+
+    Researcher -->|Uses| Tavily
+    Researcher -->|Uses| arXiv
+    Researcher -->|Uses| Wiki
     Tavily & arXiv & Wiki --> HTTP_Client
+
     Researcher & Writer & Editor --> ADK_Runtime
+    ADK_Runtime -.->|Reads| Metadata
     ADK_Runtime --> Gemini
-    Gemini -.-> Env
-    BG_Thread -.->|Updates Status| TaskStore
-    BG_Thread -.->|Saves Final Report| DB
+    Gemini -.->|Reads Credentials| Env
+
     %% Styling
     style Layer_1 fill:#0a192f,stroke:#3b82f6,color:#fff
-    style Layer_2 fill:#0a192f,stroke:#10b981,color:#fff
-    style Layer_3 fill:#0a192f,stroke:#f59e0b,color:#fff
-    style Layer_4 fill:#0a192f,stroke:#8b5cf6,color:#fff
-    style Layer_5 fill:#0a192f,stroke:#ec4899,color:#fff
-    style Layer_6 fill:#0a192f,stroke:#94a3b8,color:#fff
+    style Layer_2 fill:#0a192f,stroke:#f59e0b,color:#fff
+    style Layer_3 fill:#0a192f,stroke:#8b5cf6,color:#fff
+    style Layer_4 fill:#0a192f,stroke:#ec4899,color:#fff
+    style Layer_5 fill:#0a192f,stroke:#94a3b8,color:#fff
 ```
 ---
 
