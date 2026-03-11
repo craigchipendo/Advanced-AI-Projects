@@ -1,1 +1,20 @@
+# Database
+sqlalchemy
+psycopg2-binary  
 
+# Utilities
+python-dotenv
+jinja2
+requests
+urllib3
+
+# Research tools
+tavily-python
+wikipedia
+
+# PDF extraction
+pdfminer.six
+pymupdf
+
+# Google ADK (includes google-generativeai / google-genai)
+google-adk>=0.3.0

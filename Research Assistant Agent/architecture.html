@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Agent – Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --border: #1e2330;
+    --border-bright: #2a3450;
+    --text: #c9d1e0;
+    --muted: #5a6480;
+    --accent-blue: #3b82f6;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-purple: #8b5cf6;
+    --accent-pink: #ec4899;
+    --glow-blue: rgba(59,130,246,0.15);
+    --glow-green: rgba(16,185,129,0.15);
+    --glow-amber: rgba(245,158,11,0.12);
+    --glow-purple: rgba(139,92,246,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 56px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .header-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent-blue);
+  }
+
+  h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-sub {
+    font-size: 14px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+
+  /* Layers */
+  .layer {
+    margin-bottom: 20px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .layer:nth-child(1) { animation-delay: 0.1s; }
+  .layer:nth-child(2) { animation-delay: 0.2s; }
+  .layer:nth-child(3) { animation-delay: 0.3s; }
+  .layer:nth-child(4) { animation-delay: 0.4s; }
+  .layer:nth-child(5) { animation-delay: 0.5s; }
+
+  .layer-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    padding-left: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .layer-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .layer-body {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .layer-body::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+  }
+
+  /* Color themes per layer */
+  .layer-client .layer-body { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.04); }
+  .layer-client .layer-body::before { background: linear-gradient(90deg, transparent, var(--accent-blue), transparent); }
+  .layer-client .layer-label { color: var(--accent-blue); }
+
+  .layer-api .layer-body { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.04); }
+  .layer-api .layer-body::before { background: linear-gradient(90deg, transparent, var(--accent-green), transparent); }
+  .layer-api .layer-label { color: var(--accent-green); }
+
+  .layer-orchestration .layer-body { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.04); }
+  .layer-orchestration .layer-body::before { background: linear-gradient(90deg, transparent, var(--accent-amber), transparent); }
+  .layer-orchestration .layer-label { color: var(--accent-amber); }
+
+  .layer-agents .layer-body { border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.04); }
+  .layer-agents .layer-body::before { background: linear-gradient(90deg, transparent, var(--accent-purple), transparent); }
+  .layer-agents .layer-label { color: var(--accent-purple); }
+
+  .layer-tools .layer-body { border-color: rgba(236,72,153,0.3); background: rgba(236,72,153,0.04); }
+  .layer-tools .layer-body::before { background: linear-gradient(90deg, transparent, var(--accent-pink), transparent); }
+  .layer-tools .layer-label { color: var(--accent-pink); }
+
+  .layer-infra .layer-body { border-color: rgba(100,116,139,0.3); background: rgba(100,116,139,0.04); }
+  .layer-infra .layer-body::before { background: linear-gradient(90deg, transparent, #64748b, transparent); }
+  .layer-infra .layer-label { color: #94a3b8; }
+
+  /* Card grid */
+  .cards {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .card {
+    border: 1px solid var(--border-bright);
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    min-width: 160px;
+    flex: 1;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    cursor: default;
+    position: relative;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.06);
+  }
+
+  .card-icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+    white-space: nowrap;
+  }
+
+  .card-file {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .card-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .tag-blue  { border-color: rgba(59,130,246,0.4);  color: var(--accent-blue);   background: rgba(59,130,246,0.08); }
+  .tag-green { border-color: rgba(16,185,129,0.4);  color: var(--accent-green);  background: rgba(16,185,129,0.08); }
+  .tag-amber { border-color: rgba(245,158,11,0.4);  color: var(--accent-amber);  background: rgba(245,158,11,0.08); }
+  .tag-purple{ border-color: rgba(139,92,246,0.4);  color: var(--accent-purple); background: rgba(139,92,246,0.08); }
+  .tag-pink  { border-color: rgba(236,72,153,0.4);  color: var(--accent-pink);   background: rgba(236,72,153,0.08); }
+  .tag-slate { border-color: rgba(100,116,139,0.4); color: #94a3b8;              background: rgba(100,116,139,0.08); }
+
+  /* Card color variants */
+  .card-blue   { border-color: rgba(59,130,246,0.35); }
+  .card-blue:hover { border-color: rgba(59,130,246,0.6); }
+
+  .card-green  { border-color: rgba(16,185,129,0.35); }
+  .card-green:hover { border-color: rgba(16,185,129,0.6); }
+
+  .card-amber  { border-color: rgba(245,158,11,0.35); }
+  .card-amber:hover { border-color: rgba(245,158,11,0.6); }
+
+  .card-purple { border-color: rgba(139,92,246,0.35); }
+  .card-purple:hover { border-color: rgba(139,92,246,0.6); }
+
+  .card-pink   { border-color: rgba(236,72,153,0.35); }
+  .card-pink:hover { border-color: rgba(236,72,153,0.6); }
+
+  /* Flow arrows between layers */
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 4px 0;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .flow-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .flow-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border-bright);
+    animation: pulse 2s infinite;
+  }
+
+  .flow-shaft {
+    width: 1px;
+    height: 18px;
+    background: linear-gradient(to bottom, var(--border-bright), transparent);
+  }
+
+  .flow-arrowhead {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--border-bright);
+  }
+
+  .flow-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* Inline data flow inside orchestration */
+  .flow-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .flow-step {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-amber);
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+
+  .flow-arrow-inline {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  /* Divider within a card row */
+  .card-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  /* Sub-section label inside a layer */
+  .sub-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 12px 0 6px;
+  }
+
+  /* Legend */
+  .legend {
+    margin-top: 40px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    animation: fadeUp 0.5s 0.6s ease both;
+    opacity: 0;
+    animation-fill-mode: forwards;
+  }
+
+  .legend-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.3); }
+  }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .cards { flex-direction: column; }
+    .card { min-width: unset; }
+    .card-divider { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-eyebrow">System Architecture</div>
+    <h1>Research <span>Agent</span></h1>
+    <div class="header-sub">Google ADK · FastAPI · Gemini 2.0 Flash · Multi-Agent Workflow</div>
+  </div>
+
+  <!-- ── LAYER 1: CLIENT ───────────────────────────────────────────────── -->
+  <div class="layer layer-client">
+    <div class="layer-label">① Client Layer</div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card card-blue">
+          <span class="card-icon">🌐</span>
+          <div class="card-title">Browser UI</div>
+          <div class="card-file">templates/index.html</div>
+          <div class="card-desc">Jinja2-rendered single-page interface. Submits research prompts and polls for real-time step progress.</div>
+          <div class="card-tags">
+            <span class="tag tag-blue">HTML/JS</span>
+            <span class="tag tag-blue">SSE polling</span>
+          </div>
+        </div>
+        <div class="card card-blue">
+          <span class="card-icon">🖼️</span>
+          <div class="card-title">Static Assets</div>
+          <div class="card-file">static/</div>
+          <div class="card-desc">Logos (Tavily, arXiv, Wikipedia), CSS/JS. Served via FastAPI StaticFiles mount.</div>
+          <div class="card-tags">
+            <span class="tag tag-slate">PNG / SVG</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-arrow">
+    <div class="flow-line">
+      <div class="flow-dot"></div>
+      <div class="flow-shaft"></div>
+      <div class="flow-arrowhead"></div>
+    </div>
+    <div class="flow-label">HTTP POST /generate_report · GET /task_progress/:id · GET /task_status/:id</div>
+  </div>
+
+  <!-- ── LAYER 2: API / SERVER ─────────────────────────────────────────── -->
+  <div class="layer layer-api">
+    <div class="layer-label">② API &amp; Server Layer</div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card card-green">
+          <span class="card-icon">⚡</span>
+          <div class="card-title">FastAPI App</div>
+          <div class="card-file">main.py</div>
+          <div class="card-desc">Handles all HTTP routes. Validates requests with Pydantic. Fires off background threads for each research job.</div>
+          <div class="card-tags">
+            <span class="tag tag-green">CORS</span>
+            <span class="tag tag-green">Pydantic</span>
+            <span class="tag tag-green">Uvicorn</span>
+          </div>
+        </div>
+        <div class="card card-green">
+          <span class="card-icon">💾</span>
+          <div class="card-title">Task Store</div>
+          <div class="card-file">main.py · task_progress{}</div>
+          <div class="card-desc">In-memory dict holds live step progress for streaming to the UI while the job runs.</div>
+          <div class="card-tags">
+            <span class="tag tag-green">In-memory</span>
+            <span class="tag tag-green">Thread-safe reads</span>
+          </div>
+        </div>
+        <div class="card card-green">
+          <span class="card-icon">🗄️</span>
+          <div class="card-title">Database</div>
+          <div class="card-file">SQLAlchemy · Task model</div>
+          <div class="card-desc">Persists task metadata and final JSON report. SQLite for local dev; PostgreSQL for production / Docker.</div>
+          <div class="card-tags">
+            <span class="tag tag-green">SQLite</span>
+            <span class="tag tag-green">PostgreSQL</span>
+          </div>
+        </div>
+        <div class="card card-green">
+          <span class="card-icon">🧵</span>
+          <div class="card-title">Background Thread</div>
+          <div class="card-file">threading.Thread</div>
+          <div class="card-desc">run_agent_workflow() executes all plan steps sequentially, writing progress back to task_progress dict.</div>
+          <div class="card-tags">
+            <span class="tag tag-green">Daemon thread</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-arrow">
+    <div class="flow-line">
+      <div class="flow-dot"></div>
+      <div class="flow-shaft"></div>
+      <div class="flow-arrowhead"></div>
+    </div>
+    <div class="flow-label">planner_agent(topic) → steps[ ] → executor_agent_step() × N</div>
+  </div>
+
+  <!-- ── LAYER 3: ORCHESTRATION ────────────────────────────────────────── -->
+  <div class="layer layer-orchestration">
+    <div class="layer-label">③ Orchestration Layer</div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card card-amber">
+          <span class="card-icon">🗺️</span>
+          <div class="card-title">Planner Agent</div>
+          <div class="card-file">src/planning_agent.py · planner_agent()</div>
+          <div class="card-desc">Calls Gemini to produce a structured research plan (up to 7 steps). Enforces mandatory first/second/final steps via contract rules.</div>
+          <div class="card-tags">
+            <span class="tag tag-amber">LlmAgent</span>
+            <span class="tag tag-amber">gemini-2.0-flash</span>
+            <span class="tag tag-amber">JSON coercion</span>
+          </div>
+        </div>
+        <div class="card card-amber">
+          <span class="card-icon">🔀</span>
+          <div class="card-title">Executor Router</div>
+          <div class="card-file">src/planning_agent.py · executor_agent_step()</div>
+          <div class="card-desc">Reads each step title and routes to the correct specialist agent based on keyword matching (research / writer / editor).</div>
+          <div class="card-tags">
+            <span class="tag tag-amber">Keyword routing</span>
+            <span class="tag tag-amber">History injection</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inline workflow -->
+      <div class="flow-row">
+        <span class="flow-step">Step 1: Tavily web search</span>
+        <span class="flow-arrow-inline">→</span>
+        <span class="flow-step">Step 2: arXiv lookup</span>
+        <span class="flow-arrow-inline">→</span>
+        <span class="flow-step">Step 3: Synthesise &amp; rank</span>
+        <span class="flow-arrow-inline">→</span>
+        <span class="flow-step">Step 4: Draft outline</span>
+        <span class="flow-arrow-inline">→</span>
+        <span class="flow-step">Step 5: Editorial review</span>
+        <span class="flow-arrow-inline">→</span>
+        <span class="flow-step">Step 6: Final Markdown report</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-arrow">
+    <div class="flow-line">
+      <div class="flow-dot"></div>
+      <div class="flow-shaft"></div>
+      <div class="flow-arrowhead"></div>
+    </div>
+    <div class="flow-label">ADK InMemoryRunner · run_async() → final response event</div>
+  </div>
+
+  <!-- ── LAYER 4: AGENTS ───────────────────────────────────────────────── -->
+  <div class="layer layer-agents">
+    <div class="layer-label">④ Specialist Agents (Google ADK)</div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card card-purple">
+          <span class="card-icon">🔍</span>
+          <div class="card-title">Research Agent</div>
+          <div class="card-file">src/agents.py · research_agent()</div>
+          <div class="card-desc">Searches web, arXiv, and Wikipedia. Returns structured findings with source attribution, URLs, and authors.</div>
+          <div class="card-tags">
+            <span class="tag tag-purple">3 tools wired</span>
+            <span class="tag tag-purple">Multi-source</span>
+          </div>
+        </div>
+        <div class="card card-purple">
+          <span class="card-icon">✍️</span>
+          <div class="card-title">Writer Agent</div>
+          <div class="card-file">src/agents.py · writer_agent()</div>
+          <div class="card-desc">Synthesises research into a structured Markdown report with inline citations [N] and a clickable References section.</div>
+          <div class="card-tags">
+            <span class="tag tag-purple">Markdown out</span>
+            <span class="tag tag-purple">Citations</span>
+          </div>
+        </div>
+        <div class="card card-purple">
+          <span class="card-icon">🧠</span>
+          <div class="card-title">Editor Agent</div>
+          <div class="card-file">src/agents.py · editor_agent()</div>
+          <div class="card-desc">Reviews draft for coherence, strengthens arguments, standardises terminology, preserves all citations.</div>
+          <div class="card-tags">
+            <span class="tag tag-purple">Revision pass</span>
+            <span class="tag tag-purple">No commentary</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-label">ADK Runtime (per agent call)</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-title" style="font-size:12px;">InMemoryRunner</div>
+          <div class="card-desc">Isolated per-call runner. Avoids cross-request session leaks in threaded FastAPI environment.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="font-size:12px;">InMemorySessionService</div>
+          <div class="card-desc">Fresh session per call. Created inside _run_agent() to ensure clean state each time.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="font-size:12px;">_get_or_create_event_loop()</div>
+          <div class="card-desc">Creates asyncio loop per thread when none exists — required for FastAPI thread pool workers.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-arrow">
+    <div class="flow-line">
+      <div class="flow-dot"></div>
+      <div class="flow-shaft"></div>
+      <div class="flow-arrowhead"></div>
+    </div>
+    <div class="flow-label">Tool function calls via ADK tool dispatch</div>
+  </div>
+
+  <!-- ── LAYER 5: TOOLS ────────────────────────────────────────────────── -->
+  <div class="layer layer-tools">
+    <div class="layer-label">⑤ Research Tools</div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card card-pink">
+          <span class="card-icon">🌍</span>
+          <div class="card-title">Tavily Search</div>
+          <div class="card-file">src/research_tools.py · tavily_search_tool()</div>
+          <div class="card-desc">General web search via Tavily API. Returns title, content, URL for each result. Requires TAVILY_API_KEY.</div>
+          <div class="card-tags">
+            <span class="tag tag-pink">REST API</span>
+            <span class="tag tag-pink">TavilyClient</span>
+          </div>
+        </div>
+        <div class="card card-pink">
+          <span class="card-icon">📄</span>
+          <div class="card-title">arXiv Search</div>
+          <div class="card-file">src/research_tools.py · arxiv_search_tool()</div>
+          <div class="card-desc">Queries arXiv Atom API. Fetches matching PDFs, extracts up to 6 pages of text via PyMuPDF or pdfminer.</div>
+          <div class="card-tags">
+            <span class="tag tag-pink">Atom XML</span>
+            <span class="tag tag-pink">PyMuPDF</span>
+            <span class="tag tag-pink">pdfminer</span>
+          </div>
+        </div>
+        <div class="card card-pink">
+          <span class="card-icon">📖</span>
+          <div class="card-title">Wikipedia Search</div>
+          <div class="card-file">src/research_tools.py · wikipedia_search_tool()</div>
+          <div class="card-desc">Background context lookup. Returns page title, N-sentence summary, and canonical URL.</div>
+          <div class="card-tags">
+            <span class="tag tag-pink">wikipedia-py</span>
+            <span class="tag tag-pink">Summary API</span>
+          </div>
+        </div>
+      </div>
+      <div class="sub-label" style="margin-top:14px;">Shared HTTP infrastructure</div>
+      <div class="cards">
+        <div class="card">
+          <div class="card-desc">Shared <code style="font-size:10px;color:#ec4899">requests.Session</code> with retry adapter (5 retries, backoff 0.6s, handles 429/5xx). Pool of 10 connections, 20 max size.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="flow-arrow">
+    <div class="flow-line">
+      <div class="flow-dot"></div>
+      <div class="flow-shaft"></div>
+      <div class="flow-arrowhead"></div>
+    </div>
+    <div class="flow-label">GOOGLE_API_KEY / Vertex AI credentials → Gemini API</div>
+  </div>
+
+  <!-- ── LAYER 6: INFRA ────────────────────────────────────────────────── -->
+  <div class="layer layer-infra">
+    <div class="layer-label">⑥ Infrastructure &amp; Config</div>
+    <div class="layer-body">
+      <div class="cards">
+        <div class="card">
+          <span class="card-icon">🤖</span>
+          <div class="card-title">Gemini API</div>
+          <div class="card-file">google-genai / google-adk</div>
+          <div class="card-desc">LLM backbone for all four agents. Default: gemini-2.0-flash. Override via GEMINI_MODEL env var.</div>
+          <div class="card-tags">
+            <span class="tag tag-slate">Option A: API key</span>
+            <span class="tag tag-slate">Option B: Vertex AI</span>
+          </div>
+        </div>
+        <div class="card">
+          <span class="card-icon">🐳</span>
+          <div class="card-title">Docker</div>
+          <div class="card-file">Dockerfile · docker/entrypoint.sh</div>
+          <div class="card-desc">Single-container build with embedded PostgreSQL. entrypoint.sh starts Postgres cluster, creates user/db, then launches Uvicorn.</div>
+          <div class="card-tags">
+            <span class="tag tag-slate">python:3.11-slim</span>
+            <span class="tag tag-slate">port 8000</span>
+          </div>
+        </div>
+        <div class="card">
+          <span class="card-icon">🔐</span>
+          <div class="card-title">Environment</div>
+          <div class="card-file">.env / .env.example</div>
+          <div class="card-desc">GOOGLE_API_KEY, TAVILY_API_KEY, DATABASE_URL, GEMINI_MODEL. Loaded via python-dotenv at startup.</div>
+          <div class="card-tags">
+            <span class="tag tag-slate">dotenv</span>
+          </div>
+        </div>
+        <div class="card">
+          <span class="card-icon">🛠️</span>
+          <div class="card-title">ADK Dev UI</div>
+          <div class="card-file">adk web src</div>
+          <div class="card-desc">Interactive chat UI for testing agents in isolation. Discovers root_agent from src/agent.py before wiring to FastAPI.</div>
+          <div class="card-tags">
+            <span class="tag tag-slate">adk web</span>
+            <span class="tag tag-slate">localhost:8000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">// Data Flow Summary</div>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-blue)"></div>
+        User submits prompt → POST /generate_report
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-green)"></div>
+        FastAPI creates DB task, launches background thread
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-amber)"></div>
+        Planner builds step list → Executor routes each step
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-purple)"></div>
+        ADK LlmAgent calls Gemini; Research agent uses tools
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--accent-pink)"></div>
+        Tools hit Tavily, arXiv, Wikipedia APIs; return dicts
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#94a3b8"></div>
+        Final Markdown report saved to DB, streamed to UI
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
