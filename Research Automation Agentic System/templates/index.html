@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>— Research Automation Agentic System</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    /* ── Hero ── */
+    .hero {
+      background-color: #0d0d0d;
+      color: #fff;
+      text-align: center;
+      padding: 64px 24px 48px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .hero-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 20px;
+      line-height: 1.1;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: #aaa;
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Overview section ── */
+    .overview-section {
+      background-color: #0d0d0d;
+      color: #ccc;
+      padding: 48px 24px 56px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+    .overview-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .overview-section p {
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: #bbb;
+      max-width: 860px;
+    }
+
+    /* ── App body ── */
+    body { background-color: #f8f9fa; }
+    .app-container { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; }
+
+    /* ── Steps ── */
+    .step-header { cursor: pointer; }
+    .step-running { background-color: #fff3cd; }
+    .step-done    { background-color: #d1e7dd; }
+    .step-error   { background-color: #f8d7da; }
+    .step-pending { background-color: #e2e3e5; }
+    .substep { font-size: 0.95em; margin-left: 1.5rem; }
+    .substep-header { cursor: pointer; font-weight: bold; }
+    #stepStatusList div { margin-bottom: 0.25rem; }
+    #finalReport { background-color: #fff; border: 1px solid #ccc; padding: 1rem; border-radius: 5px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <h1>Research Automation<br>Agentic System</h1>
+</div>
+
+<!-- ── Overview ── -->
+<div class="overview-section">
+  <div style="max-width:860px; margin:0 auto;">
+    <p>
+      As AI chatbots like ChatGPT, Gemini, and Claude become deeply embedded in daily workflows, many people have
+      stopped doing deep, independent research — relying instead on single-turn LLM responses that may be outdated,
+      shallow, or hallucinated. I built this Research Agent to counter that trend: a system that actively goes out,
+      retrieves current information from multiple authoritative sources, synthesises evidence, and produces structured,
+      verifiable outputs. It keeps me up to date with the latest trends in AI and data science without sacrificing
+      the rigour of real research.
+    </p>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div class="app-container">
+
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-body">
+      <p class="mb-3">
+        The agent runs a full multi-step pipeline — planning the research strategy, searching the web via
+        <strong>Tavily</strong>, querying <strong>arXiv</strong> for academic preprints, and consulting
+        <strong>Wikipedia</strong> for background context — before passing all findings to a dedicated
+        <strong>writer</strong> and <strong>editor</strong> agent to produce a polished, citation-rich academic report.
+      </p>
+      <p class="mb-3">
+        Enter your research topic below. The more specific your prompt, the better the output —
+        try including <strong>3–4 details</strong> such as a target domain, a time frame, or a specific angle.
+      </p>
+      <p class="mb-0">
+        To inspect what the agent is doing at each stage, click the <strong>➕</strong> icon next to any pipeline step.
+        The generated report includes clickable links in the references section — right-click to open in a new tab.
+      </p>
+    </div>
+  </div>
+
+  <!-- Prompt -->
+  <div class="mb-3">
+    <label for="promptInput" class="form-label fw-semibold">Research Topic</label>
+    <div class="d-flex align-items-start gap-2">
+      <textarea
+        class="form-control"
+        id="promptInput"
+        rows="4"
+        placeholder="Describe your research topic here — e.g. Recent advances in small language models for AI in education"
+        style="flex: 1"
+      ></textarea>
+      <button class="btn btn-dark px-4" onclick="submitPrompt()">Submit</button>
+    </div>
+    <div class="form-text">Powered by gpt-4o-mini · OpenAI · Google ADK</div>
+  </div>
+
+  <div id="taskInfo" class="mb-3"></div>
+  <div id="stepStatusList" class="mb-4"></div>
+  <div id="stepDetails"></div>
+  <div id="finalOutput" class="mt-4"></div>
+</div>
+
+<script>
+let currentTaskId = null;
+let currentTopic = null;
+let pollInterval = null;
+let finalReportMarkdown = "";
+const renderedSteps = new Map();
+
+function setTaskInfoGenerating(topic){
+  document.getElementById('taskInfo').innerHTML = `
+    <h5 class="d-flex align-items-center">
+      <span class="me-2">⚙️ Generating steps for the search: <code>${topic}</code></span>
+      <span id="stepsIcon"><span class='spinner-border spinner-border-sm text-primary'></span></span>
+    </h5>
+  `;
+}
+
+function setStepsGenerated(){
+  const stepsIcon = document.getElementById('stepsIcon');
+  if (stepsIcon) stepsIcon.textContent = '✅';
+}
+
+function disableUI(disabled){
+  const btn = document.querySelector('button.btn');
+  const input = document.getElementById('promptInput');
+  if (btn) btn.disabled = disabled;
+  if (input) input.disabled = disabled;
+}
+
+function submitPrompt() {
+  const prompt = document.getElementById('promptInput').value;
+  if (!prompt) return;
+
+  currentTopic = prompt;
+  setTaskInfoGenerating(currentTopic);
+  disableUI(true);
+
+  fetch('/generate_report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  })
+  .then(res => res.json())
+  .then(data => {
+    currentTaskId = data.task_id;
+    document.getElementById('stepStatusList').innerHTML = '';
+    document.getElementById('stepDetails').innerHTML = '';
+    document.getElementById('finalOutput').innerHTML = '';
+    renderedSteps.clear();
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(fetchProgress, 2000);
+  })
+  .catch(() => {
+    const stepsIcon = document.getElementById('stepsIcon');
+    if (stepsIcon) stepsIcon.textContent = '❌';
+    disableUI(false);
+  });
+}
+
+function fetchProgress() {
+  if (!currentTaskId) return;
+
+  fetch(`/task_progress/${currentTaskId}`)
+    .then(res => res.json())
+    .then(data => {
+      const { steps } = data;
+
+      if (Array.isArray(steps) && steps.length > 0) setStepsGenerated();
+
+      steps.forEach((step, index) => {
+        const stepKey = `${step.title}-${step.status}-${step.substeps.length}`;
+        if (renderedSteps.get(index) === stepKey) return;
+        renderedSteps.set(index, stepKey);
+
+        const icon = step.status === 'done'    ? '✅' :
+                     step.status === 'running' ? '<span class="spinner-border spinner-border-sm text-warning"></span>' :
+                     step.status === 'error'   ? '❌' : '🕓';
+
+        const rowId = `step-row-${index}`;
+        let row = document.getElementById(rowId);
+        if (!row) {
+          row = document.createElement('div');
+          row.id = rowId;
+          row.className = `step-header ${getStatusClass(step.status)}`;
+          row.innerHTML = `${icon} ${step.title}`;
+          document.getElementById('stepStatusList').appendChild(row);
+        } else {
+          row.className = `step-header ${getStatusClass(step.status)}`;
+          row.innerHTML = `${icon} ${step.title}`;
+        }
+
+        const cardId = `step-card-${index}`;
+        let card = document.getElementById(cardId);
+        const substepsHTML = step.substeps.map((sub, j) => `
+          <div class="substep">
+            <div class="substep-header" data-bs-toggle="collapse" data-bs-target="#substep-${index}-${j}">
+              ➕ ${sub.title}
+            </div>
+            <div id="substep-${index}-${j}" class="collapse">
+              <div class="bg-light p-2 rounded" style="white-space:pre-wrap;">${marked.parse(sub.content)}</div>
+            </div>
+          </div>
+        `).join('');
+
+        if (!card) {
+          card = document.createElement('div');
+          card.id = cardId;
+          card.className = `card mb-3 ${getStepClass(step.status)}`;
+          card.innerHTML = `
+            <div class="card-header">${step.title} — ${step.status.toUpperCase()}</div>
+            <div class="card-body">
+              <p>${step.description}</p>
+              ${substepsHTML}
+            </div>
+          `;
+          document.getElementById('stepDetails').appendChild(card);
+        } else {
+          card.className = `card mb-3 ${getStepClass(step.status)}`;
+          card.querySelector('.card-header').textContent = `${step.title} — ${step.status.toUpperCase()}`;
+          card.querySelector('.card-body').innerHTML = `<p>${step.description}</p>${substepsHTML}`;
+        }
+      });
+
+      fetchTaskStatus();
+    })
+    .catch(() => {});
+}
+
+function fetchTaskStatus() {
+  fetch(`/task_status/${currentTaskId}`)
+    .then(res => res.json())
+    .then(task => {
+      if (task.status === 'done' || task.status === 'error') {
+        clearInterval(pollInterval);
+        disableUI(false);
+      }
+
+      if (typeof task.result === 'string') {
+        try { task.result = JSON.parse(task.result); } catch { return; }
+      }
+
+      if (task.status === 'done' && task.result?.html_report) {
+        finalReportMarkdown = task.result.html_report;
+        document.getElementById('finalOutput').innerHTML = `
+          <h4>📄 Final Report</h4>
+          <div class="mb-2">
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="downloadMarkdown()">⬇️ Download .md</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="downloadHTML()">⬇️ Download .html</button>
+          </div>
+          <div id="finalReport">${marked.parse(finalReportMarkdown)}</div>
+        `;
+      }
+    });
+}
+
+function getStatusClass(status) {
+  return status === 'done'    ? 'text-success' :
+         status === 'running' ? 'text-warning'  :
+         status === 'error'   ? 'text-danger'   : 'text-muted';
+}
+
+function getStepClass(status) {
+  return status === 'done'    ? 'step-done'    :
+         status === 'running' ? 'step-running'  :
+         status === 'error'   ? 'step-error'    : 'step-pending';
+}
+
+function downloadMarkdown() {
+  const blob = new Blob([finalReportMarkdown], { type: 'text/markdown' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `final_report_${currentTaskId}.md`;
+  link.click();
+}
+
+function downloadHTML() {
+  const htmlContent = marked.parse(finalReportMarkdown);
+  const blob = new Blob([htmlContent], { type: 'text/html' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `final_report_${currentTaskId}.html`;
+  link.click();
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
