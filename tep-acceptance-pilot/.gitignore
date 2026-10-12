@@ -1,0 +1,9 @@
+data/*.dat
+data/LICENSE_TEP_DATA
+tep_tmp/
+results/mock_*/
+results/synthetic_*/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/

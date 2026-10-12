@@ -1,0 +1,4 @@
+condition,coverage,mean_set_size
+clean,0.9045454545454545,1.7045454545454546
+"sensor bias (3 sd, 3 variables)",0.9045454545454545,1.7
+"sensor drift (3 sd, 3 variables)",0.8863636363636364,1.709090909090909
